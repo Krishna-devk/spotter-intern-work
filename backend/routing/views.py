@@ -45,3 +45,26 @@ class RouteCalculatorView(APIView):
 
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class AutocompleteView(APIView):
+    def get(self, request):
+        import os
+        import requests
+        text = request.query_params.get('text')
+        if not text:
+            return Response([], status=status.HTTP_200_OK)
+        
+        api_key = os.getenv('ORS_API_KEY')
+        try:
+            resp = requests.get(
+                "https://api.openrouteservice.org/geocode/autocomplete",
+                params={'api_key': api_key, 'text': text, 'size': 5},
+                timeout=5
+            )
+            resp.raise_for_status()
+            features = resp.json().get('features', [])
+            suggestions = [f['properties']['label'] for f in features]
+            return Response(suggestions, status=status.HTTP_200_OK)
+        except Exception:
+            return Response([], status=status.HTTP_200_OK)

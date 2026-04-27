@@ -67,22 +67,33 @@ def interpolate_position(geometry, fraction):
     return geometry[-1]
 
 
-# ---------------------------------------------------------------------------
-# Route fetching  (current → pickup → dropoff)
-# ---------------------------------------------------------------------------
 
 def fetch_route_data(current_coords, pickup_coords, dropoff_coords):
     api_key = os.getenv('ORS_API_KEY')
     if not api_key:
         raise ValueError("ORS_API_KEY not set.")
 
-    resp = requests.post(
-        "https://api.openrouteservice.org/v2/directions/driving-car/geojson",
-        headers={'Authorization': api_key, 'Content-Type': 'application/json'},
-        json={'coordinates': [current_coords, pickup_coords, dropoff_coords], 'instructions': True},
-        timeout=30,
-    )
-    resp.raise_for_status()
+    try:
+        resp = requests.post(
+            "https://api.openrouteservice.org/v2/directions/driving-car/geojson",
+            headers={'Authorization': api_key, 'Content-Type': 'application/json'},
+            json={
+                'coordinates': [current_coords, pickup_coords, dropoff_coords],
+                'instructions': True,
+                'radiuses': [5000, 5000, 5000]  # Search within 5km of geocoded point
+            },
+            timeout=30,
+        )
+        if resp.status_code != 200:
+            error_data = resp.json()
+            error_msg = error_data.get('error', {}).get('message', 'Unknown ORS error')
+            raise ValueError(f"OpenRouteService Error: {error_msg}")
+        
+        resp.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        if e.response.status_code == 404:
+            raise ValueError("No route found between these locations for a heavy vehicle. Try more specific addresses.")
+        raise e
     route = resp.json()['features'][0]
     props = route['properties']
     segs  = props.get('segments', [])

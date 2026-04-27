@@ -1,13 +1,117 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import axios from 'axios';
 
-const EXAMPLES = {
+const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+
+export const EXAMPLES = {
   current_location:  'Chicago, IL',
   pickup_location:   'St. Louis, MO',
   dropoff_location:  'Dallas, TX',
   current_cycle_used: 22,
 };
 
-const Field = ({ label, name, type = 'text', step, min, max, value, onChange, placeholder, hint }) => (
+const AutocompleteField = ({ label, name, value, onChange, placeholder, hint }) => {
+  const [suggestions, setSuggestions] = useState([]);
+  const [show, setShow] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const containerRef = useRef(null);
+  const timeoutRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (containerRef.current && !containerRef.current.contains(e.target)) {
+        setShow(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const fetchSuggestions = async (text) => {
+    if (text.length < 3) {
+      setSuggestions([]);
+      return;
+    }
+    setIsLoading(true);
+    try {
+      const resp = await axios.get(`${API_URL}/api/routing/autocomplete/?text=${encodeURIComponent(text)}`);
+      setSuggestions(resp.data);
+      setShow(true);
+    } catch (err) {
+      console.error('Autocomplete failed', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleInputChange = (e) => {
+    const val = e.target.value;
+    onChange(e); // Update parent state
+    
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    timeoutRef.current = setTimeout(() => {
+      fetchSuggestions(val);
+    }, 400);
+  };
+
+  const select = (s) => {
+    onChange({ target: { name, value: s } });
+    setShow(false);
+  };
+
+  return (
+    <div className="relative" ref={containerRef}>
+      <label className="block text-sm font-semibold mb-1" style={{ color: '#93c5fd' }}>{label}</label>
+      <div className="relative">
+        <input
+          type="text"
+          name={name}
+          value={value}
+          onChange={handleInputChange}
+          placeholder={placeholder}
+          required
+          autoComplete="off"
+          className="w-full rounded-lg px-3 py-2.5 text-sm outline-none transition-all pr-10"
+          style={{
+            background: 'rgba(255,255,255,0.08)',
+            border: '1px solid rgba(255,255,255,0.2)',
+            color: '#f1f5f9',
+          }}
+          onFocus={() => value.length >= 3 && setShow(true)}
+        />
+        {isLoading && (
+          <div className="absolute right-3 top-1/2 -translate-y-1/2">
+            <svg className="animate-spin h-4 text-blue-400" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+            </svg>
+          </div>
+        )}
+      </div>
+
+      {show && suggestions.length > 0 && (
+        <div 
+          className="absolute z-50 w-full mt-1 rounded-lg border border-slate-700 overflow-hidden shadow-2xl backdrop-blur-xl"
+          style={{ background: 'rgba(15,23,42,0.95)' }}
+        >
+          {suggestions.map((s, i) => (
+            <button
+              key={i}
+              type="button"
+              onClick={() => select(s)}
+              className="w-full text-left px-4 py-2.5 text-sm text-slate-300 hover:bg-blue-600 hover:text-white transition-colors border-b border-slate-800 last:border-0"
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+      )}
+      {hint && <p className="text-xs mt-1" style={{ color: '#64748b' }}>{hint}</p>}
+    </div>
+  );
+};
+
+const Field = ({ label, name, type, step, min, max, value, onChange, placeholder, hint }) => (
   <div>
     <label className="block text-sm font-semibold mb-1" style={{ color: '#93c5fd' }}>{label}</label>
     <input
@@ -26,8 +130,6 @@ const Field = ({ label, name, type = 'text', step, min, max, value, onChange, pl
         border: '1px solid rgba(255,255,255,0.2)',
         color: '#f1f5f9',
       }}
-      onFocus={e => (e.target.style.border = '1px solid #3b82f6')}
-      onBlur={e  => (e.target.style.border = '1px solid rgba(255,255,255,0.2)')}
     />
     {hint && <p className="text-xs mt-1" style={{ color: '#64748b' }}>{hint}</p>}
   </div>
@@ -57,7 +159,7 @@ const InputForm = ({ onSubmit, isLoading }) => {
     >
       <h2 className="text-lg font-bold text-white">Trip Details</h2>
 
-      <Field
+      <AutocompleteField
         label="Current Location"
         name="current_location"
         value={form.current_location}
@@ -65,14 +167,14 @@ const InputForm = ({ onSubmit, isLoading }) => {
         placeholder="e.g. Chicago, IL"
         hint="City, State or full address"
       />
-      <Field
+      <AutocompleteField
         label="Pickup Location"
         name="pickup_location"
         value={form.pickup_location}
         onChange={handleChange}
         placeholder="e.g. St. Louis, MO"
       />
-      <Field
+      <AutocompleteField
         label="Dropoff Location"
         name="dropoff_location"
         value={form.dropoff_location}
@@ -99,7 +201,7 @@ const InputForm = ({ onSubmit, isLoading }) => {
         style={{
           background: isLoading
             ? 'rgba(59,130,246,0.4)'
-            : 'linear-gradient(135deg, #3b82f6, #06b6d4)',
+            : 'linear-gradient(135deg, #3b82f6, #2563eb)',
           cursor: isLoading ? 'not-allowed' : 'pointer',
         }}
       >

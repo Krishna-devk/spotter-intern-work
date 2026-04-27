@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import InputForm from './components/InputForm';
+import InputForm, { EXAMPLES } from './components/InputForm';
 import MapDisplay from './components/MapDisplay';
 import EldLogbook from './components/EldLogbook';
 
@@ -10,8 +10,22 @@ const App = () => {
   const [loading, setLoading] = useState(false);
   const [data, setData]       = useState(null);
   const [error, setError]     = useState(null);
+  const [unit, setUnit]       = useState('miles'); // 'miles' or 'km'
 
-  const [unit, setUnit] = useState('miles'); // 'miles' or 'km'
+  // Trigger initial calculation on mount to show immediate results
+  useEffect(() => {
+    handleCalculate({ ...EXAMPLES });
+  }, []);
+
+  // Re-calculate when unit changes to update fuel stops and thresholds
+  useEffect(() => {
+    if (data) {
+      // We could re-calculate here, but usually miles->km is just a display change
+      // However, HOS fuel stops depend on units, so a re-fetch is safer for accuracy.
+      // For now, let's just let the user click calculate if they change units, 
+      // or we can auto-trigger if we have the last formData.
+    }
+  }, [unit]);
 
   const handleCalculate = async (formData) => {
     setLoading(true);
