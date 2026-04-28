@@ -23,12 +23,6 @@ const App = () => {
     handleCalculate({ ...EXAMPLES });
   }, []);
 
-  // Re-calculate automatically when unit changes for HOS precision
-  useEffect(() => {
-    if (data && lastFormData) {
-      handleCalculate(lastFormData);
-    }
-  }, [unit]);
 
   const handleCalculate = async (formData) => {
     setLoading(true);

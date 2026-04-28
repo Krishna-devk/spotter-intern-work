@@ -161,7 +161,7 @@ def calculate_hos_logs(total_drive_minutes, total_distance_miles, current_cycle_
     RESET_DUR       = 10 * 60
     CYCLE_LIMIT     = 70 * 60
     RESTART_DUR     = 34 * 60
-    FUEL_THRESHOLD  = 1000 if unit == 'miles' else 621.371 # 1000 km in miles
+    FUEL_THRESHOLD  = 1000      # 1000 miles range
     FUEL_DUR        = 15
     STOP_DUR        = 60        # pickup / dropoff
 
