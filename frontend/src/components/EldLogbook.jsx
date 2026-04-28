@@ -1,17 +1,15 @@
 import React from 'react';
 import html2canvas from 'html2canvas';
 
-// ─────────────────────────── constants ────────────────────────────────────
 const STATUS_ROWS = ['Off Duty', 'Sleeper Berth', 'Driving', 'On Duty (not driving)'];
 
-// Map backend status names → canonical row name
 const normalizeStatus = (s) => {
   if (s === 'On Duty (Not Driving)') return 'On Duty (not driving)';
   return s;
 };
 
-const ROW_H = 32; // px per row in SVG coordinate space
-const GRID_H = ROW_H * STATUS_ROWS.length; // 128
+const ROW_H = 32;
+const GRID_H = ROW_H * STATUS_ROWS.length;
 
 const pad = n => String(n).padStart(2, '0');
 
@@ -36,21 +34,18 @@ const getDateSplit = (dayIndex) => {
   };
 };
 
-// ─────────────────────────── graph grid ────────────────────────────────────
 const GraphGrid = ({ dayEvents }) => {
-  const totalW = 960; // SVG viewBox width
+  const totalW = 960;
 
-  // Draw tick marks inside each row (top-down from top, same from bottom)
   const ticks = [];
   for (let row = 0; row < STATUS_ROWS.length; row++) {
     const rowTop = row * ROW_H;
-    for (let i = 0; i <= 96; i++) {       // 96 quarter-hours in 24 h
+    for (let i = 0; i <= 96; i++) {       
       const x = (i / 96) * totalW;
       const isHour  = i % 4 === 0;
       const isHalf  = i % 2 === 0 && !isHour;
       const tickH   = isHour ? ROW_H : isHalf ? ROW_H * 0.5 : ROW_H * 0.25;
 
-      // top tick
       ticks.push(
         <line
           key={`tt-${row}-${i}`}
@@ -60,7 +55,6 @@ const GraphGrid = ({ dayEvents }) => {
           strokeWidth={isHour ? 1.5 : 0.8}
         />
       );
-      // bottom tick (mirror)
       ticks.push(
         <line
           key={`tb-${row}-${i}`}
@@ -71,7 +65,6 @@ const GraphGrid = ({ dayEvents }) => {
         />
       );
     }
-    // Row separator
     if (row < STATUS_ROWS.length - 1) {
       ticks.push(
         <line
@@ -95,9 +88,8 @@ const GraphGrid = ({ dayEvents }) => {
 
     const x1 = (ev.start_time / 1440) * totalW;
     const x2 = (ev.end_time   / 1440) * totalW;
-    const cy  = rowIdx * ROW_H + ROW_H / 2; // center of row
+    const cy  = rowIdx * ROW_H + ROW_H / 2;
 
-    // Vertical connection from previous row
     if (prevRowIdx !== null && prevRowIdx !== rowIdx) {
       const prevCy = prevRowIdx * ROW_H + ROW_H / 2;
       lines.push(
@@ -359,9 +351,7 @@ const EldLogbook = ({ events, totalMiles, unit = 'miles', locations }) => {
               </div>
             </div>
 
-            {/* ─── FIELD BOXES ────────────────────────────────────── */}
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24, marginBottom: 14 }}>
-              {/* Left column */}
               <div style={{ flex: '1 1 300px' }}>
                 <div style={{ display: 'flex', gap: 8, marginBottom: 2 }}>
                   <div style={{ border: '2px solid #000', flex: 1, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 13 }}>
