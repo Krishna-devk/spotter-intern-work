@@ -11,25 +11,30 @@ const App = () => {
   const [data, setData]       = useState(null);
   const [error, setError]     = useState(null);
   const [unit, setUnit]       = useState('miles'); // 'miles' or 'km'
+  const [theme, setTheme]     = useState(() => localStorage.getItem('theme') || 'dark');
+  const [lastFormData, setLastFormData] = useState({ ...EXAMPLES });
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+  }, [theme]);
 
   // Trigger initial calculation on mount to show immediate results
   useEffect(() => {
     handleCalculate({ ...EXAMPLES });
   }, []);
 
-  // Re-calculate when unit changes to update fuel stops and thresholds
+  // Re-calculate automatically when unit changes for HOS precision
   useEffect(() => {
-    if (data) {
-      // We could re-calculate here, but usually miles->km is just a display change
-      // However, HOS fuel stops depend on units, so a re-fetch is safer for accuracy.
-      // For now, let's just let the user click calculate if they change units, 
-      // or we can auto-trigger if we have the last formData.
+    if (data && lastFormData) {
+      handleCalculate(lastFormData);
     }
   }, [unit]);
 
   const handleCalculate = async (formData) => {
     setLoading(true);
     setError(null);
+    setLastFormData(formData); // Save for unit-toggling or re-runs
     setData(null);
     try {
       const response = await axios.post(
@@ -51,8 +56,10 @@ const App = () => {
   const unitLabel = unit === 'miles' ? 'mi' : 'km';
   const distVal = data ? (unit === 'miles' ? data.total_distance_miles : data.total_distance_miles * 1.60934) : 0;
 
+  const toggleTheme = () => setTheme(t => t === 'dark' ? 'light' : 'dark');
+
   return (
-    <div className="min-h-screen font-sans selection:bg-blue-500/30" style={{ background: 'linear-gradient(135deg, #020617 0%, #0f172a 100%)' }}>
+    <div className={`min-h-screen font-sans selection:bg-blue-500/30 theme-transition`} style={{ background: 'var(--bg-page)', color: 'var(--text-main)' }}>
       {/* Header */}
       <header className="relative py-12 px-6 text-center overflow-hidden">
         <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at 50% 50%, #3b82f6 0%, transparent 70%)' }} />
@@ -63,12 +70,12 @@ const App = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
               </svg>
             </div>
-            <h1 className="text-4xl font-black text-white tracking-tight uppercase">Spotter <span className="text-blue-500">HOS</span></h1>
+            <h1 className="text-4xl font-black tracking-tight uppercase">Spotter <span className="text-blue-500">HOS</span></h1>
           </div>
-          <p className="text-slate-400 text-lg font-medium max-w-2xl mx-auto">
+          <p className="text-lg font-medium max-w-2xl mx-auto opacity-70">
             FMCSA-Compliant ELD Engine for Property Carriers
           </p>
-          <div className="mt-4 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-bold uppercase tracking-widest">
+          <div className="mt-4 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-500 text-xs font-bold uppercase tracking-widest">
             <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
             Active Rule: 70hr / 8-Day
           </div>
@@ -79,14 +86,26 @@ const App = () => {
 
         {/* Global Controls */}
         <div className="flex justify-end items-center gap-4 px-2">
-           <div className="flex bg-slate-800/50 p-1 rounded-lg border border-slate-700 shadow-inner">
+           <div className="flex p-1 rounded-lg border shadow-inner backdrop-blur-sm" style={{ background: 'var(--bg-card)', borderColor: 'var(--border-card)' }}>
+              <button 
+                onClick={toggleTheme}
+                className="p-2 rounded-md hover:bg-slate-700/10 transition-colors mr-1"
+                title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Mode`}
+              >
+                {theme === 'dark' ? (
+                  <svg className="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clipRule="evenodd" /></svg>
+                ) : (
+                  <svg className="w-5 h-5 text-slate-700" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" /></svg>
+                )}
+              </button>
+              <div className="w-px h-6 opacity-20 self-center mx-1" style={{ backgroundColor: 'var(--text-main)' }} />
               <button 
                 onClick={() => setUnit('miles')}
-                className={`px-4 py-1.5 rounded-md text-xs font-bold tracking-wider transition-all ${unit === 'miles' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
+                className={`px-4 py-1.5 rounded-md text-xs font-bold tracking-wider transition-all ${unit === 'miles' ? 'bg-blue-600 text-white shadow-lg' : 'opacity-50 hover:opacity-100'}`}
               >MILES</button>
               <button 
                 onClick={() => setUnit('km')}
-                className={`px-4 py-1.5 rounded-md text-xs font-bold tracking-wider transition-all ${unit === 'km' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
+                className={`px-4 py-1.5 rounded-md text-xs font-bold tracking-wider transition-all ${unit === 'km' ? 'bg-blue-600 text-white shadow-lg' : 'opacity-50 hover:opacity-100'}`}
               >KM</button>
            </div>
         </div>
@@ -98,7 +117,7 @@ const App = () => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <div>
-              <p className="font-bold text-white">Calculation Error</p>
+              <p className="font-bold">Calculation Error</p>
               <p className="text-sm opacity-90">{error}</p>
             </div>
           </div>
@@ -120,10 +139,10 @@ const App = () => {
                     { label: 'Total Log Days',    value: `${totalDays} day${totalDays !== 1 ? 's' : ''}`,        icon: '📋' },
                     { label: 'HOS Events',        value: `${data.hos_events.length}`,                            icon: '📌' },
                   ].map(({ label, value, icon }) => (
-                    <div key={label} className="group relative overflow-hidden rounded-2xl p-6 transition-all hover:scale-[1.02]" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                    <div key={label} className="group relative overflow-hidden rounded-2xl p-6 transition-all hover:scale-[1.02] shadow-sm" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)' }}>
                       <div className="absolute top-0 right-0 p-3 opacity-20 text-3xl group-hover:scale-125 transition-transform">{icon}</div>
-                      <div className="text-white font-black text-2xl tracking-tight">{value}</div>
-                      <div className="text-slate-500 text-xs font-bold uppercase mt-1 tracking-widest">{label}</div>
+                      <div className="font-black text-2xl tracking-tight">{value}</div>
+                      <div className="opacity-50 text-xs font-bold uppercase mt-1 tracking-widest">{label}</div>
                     </div>
                   ))}
                 </div>
@@ -135,15 +154,15 @@ const App = () => {
               </>
             ) : (
               <div className="rounded-2xl h-full min-h-[400px] flex flex-col items-center justify-center gap-6 shadow-2xl" style={{ background: 'rgba(255,255,255,0.02)', border: '2px dashed rgba(255,255,255,0.1)' }}>
-                <div className="w-20 h-20 rounded-full bg-slate-800 flex items-center justify-center">
-                  <svg className="w-10 h-10 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="w-20 h-20 rounded-full bg-slate-800/10 flex items-center justify-center">
+                  <svg className="w-10 h-10 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
                 </div>
                 <div className="text-center">
-                  <p className="text-slate-300 font-bold text-xl">Ready for Dispatch</p>
-                  <p className="text-slate-500 text-sm mt-2 max-w-sm mx-auto px-4">Enter your route details to generate FMCSA-compliant log sheets and real-time mapping.</p>
+                  <p className="font-bold text-xl opacity-80">Ready for Dispatch</p>
+                  <p className="opacity-50 text-sm mt-2 max-w-sm mx-auto px-4">Enter your route details to generate FMCSA-compliant log sheets and real-time mapping.</p>
                 </div>
               </div>
             )}

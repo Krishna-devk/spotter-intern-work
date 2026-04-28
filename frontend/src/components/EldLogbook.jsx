@@ -169,7 +169,25 @@ const EldLogbook = ({ events, totalMiles, unit = 'miles', locations }) => {
     const element = document.getElementById(`logbook-day-${dayIdx}`);
     if (!element) return;
     try {
-      const canvas = await html2canvas(element, { scale: 2 });
+      // Capture with a forced "desktop" width even on mobile
+      const canvas = await html2canvas(element, { 
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        onclone: (clonedDoc) => {
+          const clonedEl = clonedDoc.getElementById(`logbook-day-${dayIdx}`);
+          if (clonedEl) {
+            clonedEl.style.width = '960px';
+            clonedEl.style.maxWidth = '960px';
+            clonedEl.style.minWidth = '960px';
+            // Ensure no responsive scaling or wrapping occurs in the export
+            const wrappers = clonedEl.querySelectorAll('[style*="flex-wrap: wrap"]');
+            wrappers.forEach(w => {
+              w.style.flexWrap = 'nowrap';
+            });
+          }
+        }
+      });
       const dataUrl = canvas.toDataURL('image/png');
       const link = document.createElement('a');
       link.download = `Driver_Daily_Log_Day_${dayIdx + 1}.png`;
@@ -221,7 +239,7 @@ const EldLogbook = ({ events, totalMiles, unit = 'miles', locations }) => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 40, alignItems: 'center', width: '100%', paddingBottom: 16 }}>
-      <h2 style={{ color: '#fff', fontSize: 22, fontWeight: 800, alignSelf: 'flex-start' }}>
+      <h2 style={{ color: 'var(--text-main)', fontSize: 22, fontWeight: 800, alignSelf: 'flex-start' }}>
         ELD Daily Log Sheets
       </h2>
 
@@ -267,8 +285,9 @@ const EldLogbook = ({ events, totalMiles, unit = 'miles', locations }) => {
             style={{
               background: '#fff',
               color: '#000',
-              width: 960,
-              padding: '24px 28px',
+              width: '100%',
+              maxWidth: 960,
+              padding: 'clamp(12px, 4vw, 28px)',
               fontFamily: 'Arial, Helvetica, sans-serif',
               boxShadow: '0 8px 32px rgba(0,0,0,0.45)',
               flexShrink: 0,
@@ -306,158 +325,160 @@ const EldLogbook = ({ events, totalMiles, unit = 'miles', locations }) => {
             </button>
 
             {/* ─── TITLE ROW ─────────────────────────────────────── */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 8 }}>
-              <div>
-                <div style={{ fontSize: 22, fontWeight: 900, letterSpacing: -0.5 }}>Drivers Daily Log</div>
-                <div style={{ fontSize: 11, marginTop: 1 }}>(24 hours)</div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
+              <div style={{ minWidth: 200 }}>
+                <div style={{ fontSize: 'clamp(18px, 5vw, 22px)', fontWeight: 900, letterSpacing: -0.5 }}>Drivers Daily Log</div>
+                <div style={{ fontSize: 10, marginTop: 1 }}>(24 hours)</div>
               </div>
-              <div style={{ textAlign: 'center' }}>
+              <div style={{ textAlign: 'center', flexShrink: 0 }}>
                 <div style={{ display: 'flex', gap: 4, alignItems: 'flex-end', fontSize: 16, fontWeight: 700 }}>
-                  <div style={{ borderBottom: '2px solid #000', minWidth: 44, textAlign: 'center', paddingBottom: 2 }}>{date.month}</div>
+                  <div style={{ borderBottom: '2px solid #000', minWidth: 36, textAlign: 'center', paddingBottom: 2 }}>{date.month}</div>
                   <span>/</span>
-                  <div style={{ borderBottom: '2px solid #000', minWidth: 44, textAlign: 'center', paddingBottom: 2 }}>{date.day}</div>
+                  <div style={{ borderBottom: '2px solid #000', minWidth: 36, textAlign: 'center', paddingBottom: 2 }}>{date.day}</div>
                   <span>/</span>
-                  <div style={{ borderBottom: '2px solid #000', minWidth: 56, textAlign: 'center', paddingBottom: 2 }}>{date.year}</div>
+                  <div style={{ borderBottom: '2px solid #000', minWidth: 50, textAlign: 'center', paddingBottom: 2 }}>{date.year}</div>
                 </div>
-                <div style={{ display: 'flex', gap: 12, fontSize: 10, marginTop: 2, justifyContent: 'center' }}>
+                <div style={{ display: 'flex', gap: 12, fontSize: 9, marginTop: 2, justifyContent: 'center', opacity: 0.8 }}>
                   <span>(month)</span><span>(day)</span><span>(year)</span>
                 </div>
               </div>
-              <div style={{ fontSize: 10, lineHeight: 1.6 }}>
+              <div style={{ fontSize: 9, lineHeight: 1.4, opacity: 0.8 }}>
                 Original – File at home terminal.<br />
-                Duplicate – Driver retains in his/her possession for 8 days.
+                Duplicate – Driver retains for 8 days.
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: 24, marginBottom: 12 }}>
-              <div style={{ display: 'flex', gap: 6, flex: 1, alignItems: 'flex-end' }}>
-                <span style={{ fontWeight: 700 }}>From:</span>
-                <div style={{ borderBottom: '2px solid #000', flex: 1, paddingBottom: 2, fontSize: 12 }}>{fromDesc}</div>
+            <div style={{ display: 'flex', gap: 12, marginBottom: 12, flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', gap: 6, flex: '1 1 200px', alignItems: 'flex-end' }}>
+                <span style={{ fontWeight: 700, fontSize: 11 }}>From:</span>
+                <div style={{ borderBottom: '2px solid #000', flex: 1, paddingBottom: 2, fontSize: 11 }}>{fromDesc}</div>
               </div>
-              <div style={{ display: 'flex', gap: 6, flex: 1, alignItems: 'flex-end' }}>
-                <span style={{ fontWeight: 700 }}>To:</span>
-                <div style={{ borderBottom: '2px solid #000', flex: 1, paddingBottom: 2, fontSize: 12 }}>{toDesc}</div>
+              <div style={{ display: 'flex', gap: 6, flex: '1 1 200px', alignItems: 'flex-end' }}>
+                <span style={{ fontWeight: 700, fontSize: 11 }}>To:</span>
+                <div style={{ borderBottom: '2px solid #000', flex: 1, paddingBottom: 2, fontSize: 11 }}>{toDesc}</div>
               </div>
             </div>
 
             {/* ─── FIELD BOXES ────────────────────────────────────── */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 14 }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24, marginBottom: 14 }}>
               {/* Left column */}
-              <div>
+              <div style={{ flex: '1 1 300px' }}>
                 <div style={{ display: 'flex', gap: 8, marginBottom: 2 }}>
-                  <div style={{ border: '2px solid #000', flex: 1, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 14 }}>
+                  <div style={{ border: '2px solid #000', flex: 1, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 13 }}>
                     {milesApprox} {unitLabel}
                   </div>
                   <div style={{ border: '2px solid #000', flex: 1, height: 36 }} />
                 </div>
-                <div style={{ display: 'flex', gap: 8, fontSize: 9, fontWeight: 700, textAlign: 'center', marginBottom: 6 }}>
+                <div style={{ display: 'flex', gap: 8, fontSize: 8, fontWeight: 700, textAlign: 'center', marginBottom: 6 }}>
                   <div style={{ flex: 1 }}>Total Miles Driving Today</div>
                   <div style={{ flex: 1 }}>Total Mileage Today</div>
                 </div>
                 <div style={{ border: '2px solid #000', height: 36, marginBottom: 2 }} />
-                <div style={{ fontSize: 9, fontWeight: 700, textAlign: 'center' }}>
+                <div style={{ fontSize: 8, fontWeight: 700, textAlign: 'center' }}>
                   Truck/Tractor and Trailer Numbers or License Plate(s)/State (show each unit)
                 </div>
               </div>
               {/* Right column */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <div style={{ flex: '1 1 300px', display: 'flex', flexDirection: 'column', gap: 6 }}>
                 <div>
-                  <div style={{ borderBottom: '2px solid #000', height: 28 }} />
-                  <div style={{ fontSize: 9, fontWeight: 700, textAlign: 'center' }}>Name of Carrier or Carriers</div>
+                  <div style={{ borderBottom: '2px solid #000', height: 24 }} />
+                  <div style={{ fontSize: 8, fontWeight: 700, textAlign: 'center' }}>Name of Carrier or Carriers</div>
                 </div>
                 <div>
-                  <div style={{ borderBottom: '2px solid #000', height: 28 }} />
-                  <div style={{ fontSize: 9, fontWeight: 700, textAlign: 'center' }}>Main Office Address</div>
+                  <div style={{ borderBottom: '2px solid #000', height: 24 }} />
+                  <div style={{ fontSize: 8, fontWeight: 700, textAlign: 'center' }}>Main Office Address</div>
                 </div>
                 <div>
-                  <div style={{ borderBottom: '2px solid #000', height: 28 }} />
-                  <div style={{ fontSize: 9, fontWeight: 700, textAlign: 'center' }}>Home Terminal Address</div>
+                  <div style={{ borderBottom: '2px solid #000', height: 24 }} />
+                  <div style={{ fontSize: 8, fontWeight: 700, textAlign: 'center' }}>Home Terminal Address</div>
                 </div>
               </div>
             </div>
 
             {/* ─── GRAPH GRID ─────────────────────────────────────── */}
-            <div style={{ display: 'flex', border: '3px solid #000', marginBottom: 16 }}>
-              {/* Row labels */}
-              <div style={{ width: 120, flexShrink: 0, borderRight: '3px solid #000', background: '#fff' }}>
-                <div style={{ height: 22, background: '#000' }} /> {/* spacer matching header */}
-                {STATUS_ROWS.map((r, i) => (
-                  <div
-                    key={i}
-                    style={{
-                      height: ROW_H,
-                      display: 'flex',
-                      alignItems: 'center',
-                      paddingRight: 6,
-                      paddingLeft: 4,
-                      fontSize: 10,
-                      fontWeight: 700,
-                      borderBottom: i < STATUS_ROWS.length - 1 ? '1px solid #888' : 'none',
-                      lineHeight: 1.2,
-                    }}
-                  >
-                    {i + 1}. {r}
-                  </div>
-                ))}
-              </div>
-
-              {/* Grid area */}
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <GraphGrid dayEvents={dayEvents} />
-              </div>
-
-              {/* Total Hours column */}
-              <div style={{ width: 56, flexShrink: 0, borderLeft: '3px solid #000', background: '#fff' }}>
-                <div style={{ height: 22, background: '#000', color: '#fff', fontSize: 9, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', lineHeight: 1.1 }}>
-                  Total<br />Hours
-                </div>
-                {STATUS_ROWS.map((s, i) => {
-                  const mins = hoursPerRow[s] || 0;
-                  return (
+            <div style={{ overflowX: 'auto', marginBottom: 16 }}>
+              <div style={{ display: 'flex', border: '3px solid #000', minWidth: 600 }}>
+                {/* Row labels */}
+                <div style={{ width: 110, flexShrink: 0, borderRight: '3px solid #000', background: '#fff' }}>
+                  <div style={{ height: 22, background: '#000' }} /> {/* spacer matching header */}
+                  {STATUS_ROWS.map((r, i) => (
                     <div
                       key={i}
                       style={{
                         height: ROW_H,
                         display: 'flex',
                         alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: 11,
+                        paddingRight: 6,
+                        paddingLeft: 4,
+                        fontSize: 9,
                         fontWeight: 700,
                         borderBottom: i < STATUS_ROWS.length - 1 ? '1px solid #888' : 'none',
+                        lineHeight: 1.1,
                       }}
                     >
-                      {mins > 0 ? fmtHours(mins) : ''}
+                      {i + 1}. {r}
                     </div>
-                  );
-                })}
+                  ))}
+                </div>
+
+                {/* Grid area */}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <GraphGrid dayEvents={dayEvents} />
+                </div>
+
+                {/* Total Hours column */}
+                <div style={{ width: 50, flexShrink: 0, borderLeft: '3px solid #000', background: '#fff' }}>
+                  <div style={{ height: 22, background: '#000', color: '#fff', fontSize: 8, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', lineHeight: 1.1 }}>
+                    Total<br />Hours
+                  </div>
+                  {STATUS_ROWS.map((s, i) => {
+                    const mins = hoursPerRow[s] || 0;
+                    return (
+                      <div
+                        key={i}
+                        style={{
+                          height: ROW_H,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: 10,
+                          fontWeight: 700,
+                          borderBottom: i < STATUS_ROWS.length - 1 ? '1px solid #888' : 'none',
+                        }}
+                      >
+                        {mins > 0 ? fmtHours(mins) : ''}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
 
             {/* ─── REMARKS ────────────────────────────────────────── */}
-            <div style={{ display: 'flex', gap: 16, marginBottom: 16 }}>
+            <div style={{ display: 'flex', gap: 16, marginBottom: 16, flexWrap: 'wrap' }}>
               {/* Left block */}
-              <div style={{ width: 180, flexShrink: 0, borderLeft: '4px solid #000', paddingLeft: 8 }}>
-                <div style={{ fontWeight: 900, fontSize: 16, marginBottom: 10 }}>Remarks</div>
-                <div style={{ fontWeight: 700, fontSize: 11, marginBottom: 2 }}>Shipping<br />Documents:</div>
-                <div style={{ borderBottom: '2px solid #000', height: 26, marginBottom: 2 }} />
-                <div style={{ fontSize: 9, fontWeight: 700, marginBottom: 6 }}>B/L or Manifest No.<br />or</div>
-                <div style={{ borderBottom: '2px solid #000', height: 26, marginBottom: 2 }} />
-                <div style={{ fontSize: 9, fontWeight: 700 }}>Shipper &amp; Commodity</div>
+              <div style={{ width: 160, flexShrink: 0, borderLeft: '4px solid #000', paddingLeft: 8 }}>
+                <div style={{ fontWeight: 900, fontSize: 14, marginBottom: 10 }}>Remarks</div>
+                <div style={{ fontWeight: 700, fontSize: 10, marginBottom: 2 }}>Shipping<br />Documents:</div>
+                <div style={{ borderBottom: '2px solid #000', height: 22, marginBottom: 2 }} />
+                <div style={{ fontSize: 8, fontWeight: 700, marginBottom: 6 }}>B/L or Manifest No.<br />or</div>
+                <div style={{ borderBottom: '2px solid #000', height: 22, marginBottom: 2 }} />
+                <div style={{ fontSize: 8, fontWeight: 700 }}>Shipper &amp; Commodity</div>
               </div>
 
               {/* Right block: remarks text */}
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                <div style={{ fontSize: 9, fontWeight: 700, textAlign: 'center', marginBottom: 6 }}>
+              <div style={{ flex: '1 1 300px', display: 'flex', flexDirection: 'column' }}>
+                <div style={{ fontSize: 8, fontWeight: 700, textAlign: 'center', marginBottom: 6 }}>
                   Enter name of place you reported and where released from work and when and where each change of duty occurred.<br />
                   Use time standard of home terminal.
                 </div>
-                <div style={{ borderTop: '3px solid #000', paddingTop: 6, flex: 1, columns: 2, columnGap: 24, fontSize: 10 }}>
+                <div style={{ borderTop: '3px solid #000', paddingTop: 6, flex: 1, columns: window.innerWidth < 640 ? 1 : 2, columnGap: 24, fontSize: 9 }}>
                   {dayEvents.map((ev, i) => (
                     <div key={i} style={{ display: 'flex', gap: 6, marginBottom: 4, breakInside: 'avoid' }}>
-                      <span style={{ fontFamily: 'monospace', fontWeight: 700, whiteSpace: 'nowrap', fontSize: 10 }}>
+                      <span style={{ fontFamily: 'monospace', fontWeight: 700, whiteSpace: 'nowrap', fontSize: 9 }}>
                         {fmtTime12(ev.start_time)}
                       </span>
-                      <span style={{ borderBottom: '1px solid #ccc', flex: 1, fontSize: 10 }}>
+                      <span style={{ borderBottom: '1px solid #ccc', flex: 1, fontSize: 9 }}>
                         {ev.description}
                       </span>
                     </div>
@@ -467,60 +488,40 @@ const EldLogbook = ({ events, totalMiles, unit = 'miles', locations }) => {
             </div>
 
             {/* ─── RECAP ──────────────────────────────────────────── */}
-            <div style={{ borderTop: '3px solid #000', paddingTop: 8, display: 'flex', gap: 16, alignItems: 'flex-start' }}>
-              <div style={{ fontSize: 10, fontWeight: 700, lineHeight: 1.4, minWidth: 70 }}>
+            <div style={{ borderTop: '3px solid #000', paddingTop: 8, display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'flex-start' }}>
+              <div style={{ fontSize: 9, fontWeight: 700, lineHeight: 1.4, minWidth: 70 }}>
                 Recap:<br />Complete at<br />end of day
               </div>
 
               {/* On duty today box */}
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 56 }}>
-                <div style={{ border: '2px solid #000', width: '100%', height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 12, marginBottom: 2 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 48 }}>
+                <div style={{ border: '2px solid #000', width: '100%', height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 11, marginBottom: 2 }}>
                   {fmtHours(hoursPerRow['Driving'] + hoursPerRow['On Duty (not driving)'])}
                 </div>
-                <div style={{ fontSize: 8, fontWeight: 700, textAlign: 'center', lineHeight: 1.3 }}>
-                  On duty<br />hours<br />today,<br />Total lines<br />3 &amp; 4
+                <div style={{ fontSize: 7, fontWeight: 700, textAlign: 'center', lineHeight: 1.2 }}>
+                  On duty<br />today
                 </div>
               </div>
 
               {/* 70 hr / 8-day */}
-              <div style={{ display: 'flex', gap: 6, alignItems: 'flex-start' }}>
-                <div style={{ fontSize: 10, fontWeight: 700, textAlign: 'center', minWidth: 56, lineHeight: 1.3 }}>
-                  70 Hour/<br />8 Day<br />Drivers
+              <div style={{ display: 'flex', gap: 4, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+                <div style={{ fontSize: 9, fontWeight: 700, textAlign: 'center', minWidth: 48, lineHeight: 1.2 }}>
+                  70 Hour/<br />8 Day
                 </div>
                 {[
-                  { label: 'A. Total hours on duty last 7 days including today.', val: fmtHours(last8Days) },
-                  { label: 'B. Total hours available tomorrow 70 hr. minus A*',  val: fmtHours(avail70) },
-                  { label: 'C. Total hours on duty last 8 days including today.', val: fmtHours(last8Days) },
+                  { label: 'A. Last 7 days', val: fmtHours(last8Days) },
+                  { label: 'B. Avail tomorrow',  val: fmtHours(avail70) },
                 ].map(({ label, val }, i) => (
-                  <div key={i} style={{ minWidth: 62, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                    <div style={{ border: '2px solid #000', width: '100%', height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 11, marginBottom: 2 }}>
+                  <div key={i} style={{ minWidth: 54, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <div style={{ border: '2px solid #000', width: '100%', height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 10, marginBottom: 2 }}>
                       {val}
                     </div>
-                    <div style={{ fontSize: 8, textAlign: 'center', fontWeight: 700, lineHeight: 1.3 }}>{label}</div>
+                    <div style={{ fontSize: 7, textAlign: 'center', fontWeight: 700, lineHeight: 1.2 }}>{label}</div>
                   </div>
                 ))}
               </div>
 
-              {/* 60 hr / 7-day */}
-              <div style={{ display: 'flex', gap: 6, alignItems: 'flex-start' }}>
-                <div style={{ fontSize: 10, fontWeight: 700, textAlign: 'center', minWidth: 56, lineHeight: 1.3 }}>
-                  60 Hour/ 7<br />Day Drivers
-                </div>
-                {[
-                  { label: 'A. Total hours on duty last 6 days including today.', val: fmtHours(last7Days) },
-                  { label: 'B. Total hours available tomorrow 60 hr. minus A*',  val: fmtHours(avail60) },
-                  { label: 'C. Total hours on duty last 7 days including today.', val: fmtHours(last7Days) },
-                ].map(({ label, val }, i) => (
-                  <div key={i} style={{ minWidth: 62, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                    <div style={{ border: '2px solid #000', width: '100%', height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 11, marginBottom: 2 }}>
-                      {val}
-                    </div>
-                    <div style={{ fontSize: 8, textAlign: 'center', fontWeight: 700, lineHeight: 1.3 }}>{label}</div>
-                  </div>
-                ))}
-              </div>
-
-              <div style={{ fontSize: 9, lineHeight: 1.4, minWidth: 80, marginLeft: 'auto' }}>
+              <div style={{ fontSize: 8, lineHeight: 1.3, minWidth: 80, marginLeft: 'auto', opacity: 0.7 }}>
                 *If you took 34 consecutive hours off duty you have 60/70 hours available
               </div>
             </div>

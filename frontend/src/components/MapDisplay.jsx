@@ -73,7 +73,7 @@ const MapDisplay = ({ geometry, hosEvents = [], geocoded }) => {
   return (
     <div
       className="rounded-xl overflow-hidden"
-      style={{ border: '1px solid rgba(255,255,255,0.12)', height: 520 }}
+      style={{ border: '1px solid var(--border-card)', height: 520, background: 'var(--bg-card)' }}
     >
       <MapContainer
         center={[39.8283, -98.5795]}

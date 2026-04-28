@@ -61,7 +61,7 @@ const AutocompleteField = ({ label, name, value, onChange, placeholder, hint }) 
 
   return (
     <div className="relative" ref={containerRef}>
-      <label className="block text-sm font-semibold mb-1" style={{ color: '#93c5fd' }}>{label}</label>
+      <label className="block text-sm font-semibold mb-1" style={{ color: 'var(--text-label)' }}>{label}</label>
       <div className="relative">
         <input
           type="text"
@@ -73,9 +73,9 @@ const AutocompleteField = ({ label, name, value, onChange, placeholder, hint }) 
           autoComplete="off"
           className="w-full rounded-lg px-3 py-2.5 text-sm outline-none transition-all pr-10"
           style={{
-            background: 'rgba(255,255,255,0.08)',
-            border: '1px solid rgba(255,255,255,0.2)',
-            color: '#f1f5f9',
+            background: 'var(--bg-input)',
+            border: '1px solid var(--border-input)',
+            color: 'var(--text-main)',
           }}
           onFocus={() => value.length >= 3 && setShow(true)}
         />
@@ -91,8 +91,8 @@ const AutocompleteField = ({ label, name, value, onChange, placeholder, hint }) 
 
       {show && suggestions.length > 0 && (
         <div 
-          className="absolute z-50 w-full mt-1 rounded-lg border border-slate-700 overflow-hidden shadow-2xl backdrop-blur-xl"
-          style={{ background: 'rgba(15,23,42,0.95)' }}
+          className="absolute z-50 w-full mt-1 rounded-lg border overflow-hidden shadow-2xl backdrop-blur-xl"
+          style={{ background: 'var(--bg-card)', borderColor: 'var(--border-card)' }}
         >
           {suggestions.map((s, i) => (
             <button
@@ -106,14 +106,14 @@ const AutocompleteField = ({ label, name, value, onChange, placeholder, hint }) 
           ))}
         </div>
       )}
-      {hint && <p className="text-xs mt-1" style={{ color: '#64748b' }}>{hint}</p>}
+      {hint && <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>{hint}</p>}
     </div>
   );
 };
 
 const Field = ({ label, name, type, step, min, max, value, onChange, placeholder, hint }) => (
   <div>
-    <label className="block text-sm font-semibold mb-1" style={{ color: '#93c5fd' }}>{label}</label>
+    <label className="block text-sm font-semibold mb-1" style={{ color: 'var(--text-label)' }}>{label}</label>
     <input
       type={type}
       name={name}
@@ -126,12 +126,12 @@ const Field = ({ label, name, type, step, min, max, value, onChange, placeholder
       required
       className="w-full rounded-lg px-3 py-2.5 text-sm outline-none transition-all"
       style={{
-        background: 'rgba(255,255,255,0.08)',
-        border: '1px solid rgba(255,255,255,0.2)',
-        color: '#f1f5f9',
+        background: 'var(--bg-input)',
+        border: '1px solid var(--border-input)',
+        color: 'var(--text-main)',
       }}
     />
-    {hint && <p className="text-xs mt-1" style={{ color: '#64748b' }}>{hint}</p>}
+    {hint && <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>{hint}</p>}
   </div>
 );
 
@@ -155,9 +155,9 @@ const InputForm = ({ onSubmit, isLoading }) => {
     <form
       onSubmit={handleSubmit}
       className="rounded-2xl p-8 flex flex-col gap-5 w-full backdrop-blur-md shadow-2xl"
-      style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)' }}
+      style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)' }}
     >
-      <h2 className="text-lg font-bold text-white">Trip Details</h2>
+      <h2 className="text-lg font-bold">Trip Details</h2>
 
       <AutocompleteField
         label="Current Location"
