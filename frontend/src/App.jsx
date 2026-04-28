@@ -134,14 +134,57 @@ const App = () => {
               <>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   {[
-                    { label: 'Total Distance',    value: `${distVal.toFixed(1)} ${unitLabel}`,   icon: '🛣️' },
-                    { label: 'Driving Time',      value: `${(data.total_duration_minutes / 60).toFixed(1)} hrs`, icon: '⏱️' },
-                    { label: 'Total Log Days',    value: `${totalDays} day${totalDays !== 1 ? 's' : ''}`,        icon: '📋' },
-                    { label: 'HOS Events',        value: `${data.hos_events.length}`,                            icon: '📌' },
-                  ].map(({ label, value, icon }) => (
+                    { 
+                      label: 'Total Distance',    
+                      value: `${distVal.toFixed(1)} ${unitLabel}`,   
+                      color: 'text-blue-500',
+                      bg: 'bg-blue-500/10',
+                      icon: (
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                        </svg>
+                      )
+                    },
+                    { 
+                      label: 'Driving Time',      
+                      value: `${(data.total_duration_minutes / 60).toFixed(1)} hrs`, 
+                      color: 'text-purple-500',
+                      bg: 'bg-purple-500/10',
+                      icon: (
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      )
+                    },
+                    { 
+                      label: 'Total Log Days',    
+                      value: `${totalDays} day${totalDays !== 1 ? 's' : ''}`,        
+                      color: 'text-emerald-500',
+                      bg: 'bg-emerald-500/10',
+                      icon: (
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                        </svg>
+                      )
+                    },
+                    { 
+                      label: 'HOS Events',        
+                      value: `${data.hos_events.length}`,                            
+                      color: 'text-rose-500',
+                      bg: 'bg-rose-500/10',
+                      icon: (
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                      )
+                    },
+                  ].map(({ label, value, icon, color, bg }) => (
                     <div key={label} className="group relative overflow-hidden rounded-2xl p-6 transition-all hover:scale-[1.02] shadow-sm" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)' }}>
-                      <div className="absolute top-0 right-0 p-3 opacity-20 text-3xl group-hover:scale-125 transition-transform">{icon}</div>
-                      <div className="font-black text-2xl tracking-tight">{value}</div>
+                      <div className={`absolute top-4 right-4 p-2 rounded-xl ${bg} ${color} transition-transform group-hover:scale-110 shadow-lg`}>
+                        {icon}
+                      </div>
+                      <div className="font-black text-2xl tracking-tight mt-2">{value}</div>
                       <div className="opacity-50 text-xs font-bold uppercase mt-1 tracking-widest">{label}</div>
                     </div>
                   ))}

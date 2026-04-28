@@ -60,7 +60,7 @@ const AutocompleteField = ({ label, name, value, onChange, placeholder, hint }) 
   };
 
   return (
-    <div className="relative" ref={containerRef}>
+    <div className={`relative ${show ? 'z-50' : 'z-10'}`} ref={containerRef}>
       <label className="block text-sm font-semibold mb-1" style={{ color: 'var(--text-label)' }}>{label}</label>
       <div className="relative">
         <input
@@ -91,15 +91,22 @@ const AutocompleteField = ({ label, name, value, onChange, placeholder, hint }) 
 
       {show && suggestions.length > 0 && (
         <div 
-          className="absolute z-50 w-full mt-1 rounded-lg border overflow-hidden shadow-2xl backdrop-blur-xl"
-          style={{ background: 'var(--bg-card)', borderColor: 'var(--border-card)' }}
+          className="absolute z-50 w-full mt-1 rounded-lg border overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.5)]"
+          style={{ 
+            background: 'var(--bg-dropdown)',
+            borderColor: 'var(--border-card)',
+          }}
         >
           {suggestions.map((s, i) => (
             <button
               key={i}
               type="button"
               onClick={() => select(s)}
-              className="w-full text-left px-4 py-2.5 text-sm text-slate-300 hover:bg-blue-600 hover:text-white transition-colors border-b border-slate-800 last:border-0"
+              className="w-full text-left px-4 py-2.5 text-sm hover:bg-blue-500 hover:text-white transition-colors"
+              style={{
+                color: 'var(--text-main)',
+                borderBottom: i < suggestions.length - 1 ? '1px solid var(--border-card)' : 'none'
+              }}
             >
               {s}
             </button>

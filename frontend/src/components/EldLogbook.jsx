@@ -367,7 +367,9 @@ const EldLogbook = ({ events, totalMiles, unit = 'miles', locations }) => {
                   <div style={{ border: '2px solid #000', flex: 1, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 13 }}>
                     {milesApprox} {unitLabel}
                   </div>
-                  <div style={{ border: '2px solid #000', flex: 1, height: 36 }} />
+                  <div style={{ border: '2px solid #000', flex: 1, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 13 }}>
+                    {milesApprox} {unitLabel}
+                  </div>
                 </div>
                 <div style={{ display: 'flex', gap: 8, fontSize: 8, fontWeight: 700, textAlign: 'center', marginBottom: 6 }}>
                   <div style={{ flex: 1 }}>Total Miles Driving Today</div>

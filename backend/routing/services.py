@@ -7,13 +7,21 @@ import requests
 # Geocoding
 # ---------------------------------------------------------------------------
 
+# Global cache for geocoding
+_GEOCODE_CACHE = {}
+
 def geocode_location(location_str):
     """Convert address string OR 'lng,lat' pair to [lng, lat]."""
+    if location_str in _GEOCODE_CACHE:
+        return _GEOCODE_CACHE[location_str]
+
     parts = [p.strip() for p in location_str.split(',')]
     if len(parts) == 2:
         try:
             a, b = float(parts[0]), float(parts[1])
-            return [a, b]
+            coords = [a, b]
+            _GEOCODE_CACHE[location_str] = coords
+            return coords
         except ValueError:
             pass
 
@@ -23,14 +31,17 @@ def geocode_location(location_str):
 
     resp = requests.get(
         "https://api.openrouteservice.org/geocode/search",
-        params={'api_key': api_key, 'text': location_str, 'size': 1},
+        params={'api_key': api_key, 'text': location_str, 'size': 1, 'boundary.country': 'US'},
         timeout=10,
     )
     resp.raise_for_status()
     features = resp.json().get('features', [])
     if not features:
         raise ValueError(f"Could not geocode: '{location_str}'. Try a more specific address.")
-    return features[0]['geometry']['coordinates']  # [lng, lat]
+    
+    coords = features[0]['geometry']['coordinates']  # [lng, lat]
+    _GEOCODE_CACHE[location_str] = coords
+    return coords
 
 
 # ---------------------------------------------------------------------------
@@ -68,7 +79,16 @@ def interpolate_position(geometry, fraction):
 
 
 
+# Global cache to avoid redundant API calls during unit toggles
+_ROUTE_CACHE = {}
+
 def fetch_route_data(current_coords, pickup_coords, dropoff_coords):
+    # Create a cache key from coordinates
+    cache_key = (tuple(current_coords), tuple(pickup_coords), tuple(dropoff_coords))
+    
+    if cache_key in _ROUTE_CACHE:
+        return _ROUTE_CACHE[cache_key]
+
     api_key = os.getenv('ORS_API_KEY')
     if not api_key:
         raise ValueError("ORS_API_KEY not set.")
@@ -80,7 +100,7 @@ def fetch_route_data(current_coords, pickup_coords, dropoff_coords):
             json={
                 'coordinates': [current_coords, pickup_coords, dropoff_coords],
                 'instructions': True,
-                'radiuses': [5000, 5000, 5000]  # Search within 5km of geocoded point
+                'radiuses': [5000, 5000, 5000]
             },
             timeout=30,
         )
@@ -92,14 +112,14 @@ def fetch_route_data(current_coords, pickup_coords, dropoff_coords):
         resp.raise_for_status()
     except requests.exceptions.HTTPError as e:
         if e.response.status_code == 404:
-            raise ValueError("No route found between these locations for a heavy vehicle. Try more specific addresses.")
+            raise ValueError("No route found between these locations. Try more specific addresses.")
         raise e
+
     route = resp.json()['features'][0]
     props = route['properties']
     segs  = props.get('segments', [])
 
     if not segs:
-        # Fallback if segments still missing for some reason
         total_distance_miles   = props['summary']['distance'] * 0.000621371
         total_duration_minutes = props['summary']['duration'] / 60
         leg0_distance_miles    = 0
@@ -110,15 +130,17 @@ def fetch_route_data(current_coords, pickup_coords, dropoff_coords):
         leg0_distance_miles    = segs[0]['distance'] * 0.000621371
         leg0_duration_minutes  = segs[0]['duration'] / 60
 
-    geometry = route['geometry']['coordinates']  # [[lng, lat], …]
-
-    return {
+    result = {
         'total_distance_miles':   total_distance_miles,
         'total_duration_minutes': total_duration_minutes,
-        'geometry':               geometry,
+        'geometry':               route['geometry']['coordinates'],
         'leg0_distance_miles':    leg0_distance_miles,
         'leg0_duration_minutes':  leg0_duration_minutes,
     }
+    
+    # Store in cache
+    _ROUTE_CACHE[cache_key] = result
+    return result
 
 
 # ---------------------------------------------------------------------------
@@ -139,7 +161,7 @@ def calculate_hos_logs(total_drive_minutes, total_distance_miles, current_cycle_
     RESET_DUR       = 10 * 60
     CYCLE_LIMIT     = 70 * 60
     RESTART_DUR     = 34 * 60
-    FUEL_THRESHOLD  = 1000 if unit == 'miles' else 1609.34
+    FUEL_THRESHOLD  = 1000 if unit == 'miles' else 621.371 # 1000 km in miles
     FUEL_DUR        = 15
     STOP_DUR        = 60        # pickup / dropoff
 

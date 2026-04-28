@@ -65,7 +65,7 @@ class AutocompleteView(APIView):
         try:
             resp = requests.get(
                 "https://api.openrouteservice.org/geocode/autocomplete",
-                params={'api_key': api_key, 'text': text, 'size': 5},
+                params={'api_key': api_key, 'text': text, 'size': 5, 'boundary.country': 'US'},
                 timeout=5
             )
             resp.raise_for_status()
