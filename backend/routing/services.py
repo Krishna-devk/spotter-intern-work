@@ -126,7 +126,7 @@ def fetch_route_data(current_coords, pickup_coords, dropoff_coords):
 # ---------------------------------------------------------------------------
 
 def calculate_hos_logs(total_drive_minutes, total_distance_miles, current_cycle_used, geometry,
-                       leg0_duration_minutes=0, unit='miles'):
+                       leg0_duration_minutes=0, leg0_distance_miles=0, unit='miles'):
     """
     FMCSA-compliant HOS schedule.
     Assumptions: property-carrying, 70 hr / 8-day, no adverse conditions.
@@ -145,7 +145,9 @@ def calculate_hos_logs(total_drive_minutes, total_distance_miles, current_cycle_
 
     if total_drive_minutes <= 0:
         total_drive_minutes = 1
-    avg_speed_mpm = total_distance_miles / total_drive_minutes  # miles per minute
+    
+    # Calculate average speed to map time chunks to distances
+    avg_speed_mpm = total_distance_miles / total_drive_minutes if total_drive_minutes > 0 else 0
 
     events          = []
     current_time    = 0
@@ -154,23 +156,20 @@ def calculate_hos_logs(total_drive_minutes, total_distance_miles, current_cycle_
     cont_drive      = 0
     cycle_used      = current_cycle_used * 60
     miles_fuel      = 0
-    cum_drive       = 0         # cumulative driving minutes (for route fraction)
+    cum_dist        = 0         # cumulative distance (for route fraction)
 
-    # The driving portion starts after pickup stop and the dead-head leg to pickup.
-    # We model position as fraction of DRIVING time only.
-    drive_total = total_drive_minutes  # total minutes of pure driving
+    leg0_fraction = leg0_distance_miles / total_distance_miles if total_distance_miles > 0 else 0
 
-    def drive_frac():
-        return cum_drive / drive_total if drive_total > 0 else 0
-
-    def pos(f=None):
-        f = drive_frac() if f is None else f
-        p = interpolate_position(geometry, f)
+    def get_pos(distance):
+        frac = distance / total_distance_miles if total_distance_miles > 0 else 0
+        frac = max(0.0, min(1.0, frac))
+        p = interpolate_position(geometry, frac)
         return {'lng': p[0], 'lat': p[1]}
 
-    def add(status, duration, description, frac_override=None):
+    def add(status, duration, description, dist_override=None):
         nonlocal current_time
-        p = pos(frac_override)
+        d = cum_dist if dist_override is None else dist_override
+        p = get_pos(d)
         events.append({
             'status':      status,
             'start_time':  current_time,
@@ -182,19 +181,27 @@ def calculate_hos_logs(total_drive_minutes, total_distance_miles, current_cycle_
         })
         current_time += duration
 
-    # --- Dead-head to pickup (on duty, not driving) then pickup stop ---
-    if leg0_duration_minutes > 0:
-        add('On Duty (Not Driving)', leg0_duration_minutes, 'Driving to Pickup Location', frac_override=0.0)
-        daily_duty += leg0_duration_minutes
-        cycle_used += leg0_duration_minutes
+    # --- Start at Current Location ---
+    add('On Duty (Not Driving)', 0, 'Current Location', dist_override=0.0)
 
-    add('On Duty (Not Driving)', STOP_DUR, 'Pickup', frac_override=0.0)
+    # --- Dead-head to pickup (on duty, driving) then pickup stop ---
+    if leg0_duration_minutes > 0:
+        # Note: We consider this 'Driving' for HOS but it's the first leg
+        add('Driving', leg0_duration_minutes, 'Driving to Pickup Location', dist_override=0.0)
+        daily_drive += leg0_duration_minutes
+        daily_duty  += leg0_duration_minutes
+        cycle_used  += leg0_duration_minutes
+        cont_drive  += leg0_duration_minutes
+        cum_dist    += leg0_distance_miles
+
+    add('On Duty (Not Driving)', STOP_DUR, 'Pickup', dist_override=leg0_distance_miles)
     daily_duty += STOP_DUR
     cycle_used += STOP_DUR
+    cont_drive  = 0 # Stop resets continuous driving for the 30-min break rule if it's long enough, but usually it's just a status change
 
-    remaining = total_drive_minutes
+    remaining_drive = total_drive_minutes - leg0_duration_minutes
 
-    while remaining > 0:
+    while remaining_drive > 0:
 
         # --- Check limits before driving ---
         if cycle_used >= CYCLE_LIMIT:
@@ -221,24 +228,25 @@ def calculate_hos_logs(total_drive_minutes, total_distance_miles, current_cycle_
         miles_left = FUEL_THRESHOLD - miles_fuel
         time_fuel  = miles_left / avg_speed_mpm if avg_speed_mpm > 0 else float('inf')
 
-        chunk = min(remaining, can_11h, can_14h, can_break, can_cycle, time_fuel)
+        chunk = min(remaining_drive, can_11h, can_14h, can_break, can_cycle, time_fuel)
 
         if chunk <= 0:
-            # Safety valve — take a reset to avoid infinite loop
             add('Off Duty', RESET_DUR, '10-Hour Reset')
             daily_drive = daily_duty = cont_drive = 0
             continue
 
         add('Driving', chunk, 'Driving')
-        remaining   -= chunk
-        daily_drive += chunk
-        daily_duty  += chunk
-        cont_drive  += chunk
-        cycle_used  += chunk
-        miles_fuel  += chunk * avg_speed_mpm
-        cum_drive   += chunk
+        remaining_drive -= chunk
+        daily_drive     += chunk
+        daily_duty      += chunk
+        cont_drive      += chunk
+        cycle_used      += chunk
+        
+        dist_moved = chunk * avg_speed_mpm
+        cum_dist   += dist_moved
+        miles_fuel += dist_moved
 
-        if remaining <= 0:
+        if remaining_drive <= 0:
             break
 
         # --- What caused the stop? ---
@@ -260,9 +268,9 @@ def calculate_hos_logs(total_drive_minutes, total_distance_miles, current_cycle_
             miles_fuel  = 0
             daily_duty += FUEL_DUR
             cycle_used += FUEL_DUR
-            cont_drive  = 0   # fueling interrupts continuous driving
+            cont_drive  = 0
 
     # --- Drop-off ---
-    add('On Duty (Not Driving)', STOP_DUR, 'Drop-off', frac_override=1.0)
+    add('On Duty (Not Driving)', STOP_DUR, 'Drop-off', dist_override=total_distance_miles)
 
     return events

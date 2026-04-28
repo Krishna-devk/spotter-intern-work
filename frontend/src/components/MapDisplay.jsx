@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { MapContainer, TileLayer, Polyline, Marker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Polyline, Marker, Popup, Tooltip, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
@@ -29,6 +29,7 @@ const svgIcon = (color, emoji) => L.divIcon({
 });
 
 const ICONS = {
+  'Current Location': svgIcon('#3b82f6', '📍'),
   'Pickup':        svgIcon('#22c55e', '📦'),
   'Drop-off':      svgIcon('#ef4444', '🏁'),
   'Driving to Pickup Location': svgIcon('#6366f1', '🚛'),
@@ -94,6 +95,15 @@ const MapDisplay = ({ geometry, hosEvents = [], geocoded }) => {
           const color = STATUS_COLORS[ev.status] || '#94a3b8';
           return (
             <Marker key={i} position={[ev.lat, ev.lng]} icon={icon}>
+              <Tooltip direction="top" offset={[0, -32]} opacity={1} permanent={false}>
+                <div style={{ 
+                  fontWeight: 600, 
+                  color: color,
+                  padding: '2px 4px'
+                }}>
+                  {ev.description}
+                </div>
+              </Tooltip>
               <Popup>
                 <div style={{ minWidth: 160 }}>
                   <p style={{ fontWeight: 700, marginBottom: 4, color }}>{ev.description}</p>

@@ -28,6 +28,7 @@ class RouteCalculatorView(APIView):
                 current_cycle_used   = data['current_cycle_used'],
                 geometry             = route_data['geometry'],
                 leg0_duration_minutes= route_data['leg0_duration_minutes'],
+                leg0_distance_miles  = route_data['leg0_distance_miles'],
                 unit                 = data['unit'],
             )
 
