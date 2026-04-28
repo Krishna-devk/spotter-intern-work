@@ -19,7 +19,6 @@ const App = () => {
     localStorage.setItem('theme', theme);
   }, [theme]);
 
-  // Trigger initial calculation on mount to show immediate results
   useEffect(() => {
     handleCalculate({ ...EXAMPLES });
   }, []);
