@@ -42,6 +42,11 @@ class RouteCalculatorView(APIView):
                     'pickup':   pickup_coords,
                     'dropoff':  dropoff_coords,
                 },
+                'locations': {
+                    'current': data['current_location'],
+                    'pickup':  data['pickup_location'],
+                    'dropoff': data['dropoff_location'],
+                }
             }, status=status.HTTP_200_OK)
 
         except Exception as e:

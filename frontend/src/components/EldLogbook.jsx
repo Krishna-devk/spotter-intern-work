@@ -162,7 +162,7 @@ const GraphGrid = ({ dayEvents }) => {
 };
 
 // ─────────────────────────── main component ────────────────────────────────
-const EldLogbook = ({ events, totalMiles, unit = 'miles' }) => {
+const EldLogbook = ({ events, totalMiles, unit = 'miles', locations }) => {
   if (!events || events.length === 0) return null;
 
   const handleDownload = async (dayIdx) => {
@@ -257,8 +257,8 @@ const EldLogbook = ({ events, totalMiles, unit = 'miles' }) => {
         });
 
         // From / To
-        const fromDesc = dayEvents[0]?.description || '—';
-        const toDesc   = dayEvents[dayEvents.length - 1]?.description || '—';
+        const fromDesc = locations?.current || dayEvents[0]?.description || '—';
+        const toDesc   = locations?.dropoff || dayEvents[dayEvents.length - 1]?.description || '—';
 
         return (
           <div

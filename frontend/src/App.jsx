@@ -151,7 +151,7 @@ const App = () => {
         </div>
 
         {/* ELD Logbook */}
-        {data && <EldLogbook events={data.hos_events} totalMiles={data.total_distance_miles} unit={unit} />}
+        {data && <EldLogbook events={data.hos_events} totalMiles={data.total_distance_miles} unit={unit} locations={data.locations} />}
 
       </main>
     </div>
